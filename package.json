@@ -1,0 +1,31 @@
+{
+  "name": "chat-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "prestart": "npm install",
+    "start": "forever --minUptime 5000 --spinSleepTime 3000 server.js",
+    "watch": "forever --minUptime 5000 --spinSleepTime 3000 -w server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dieweltverbrennt/chat-backend.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dieweltverbrennt/chat-backend/issues"
+  },
+  "homepage": "https://github.com/dieweltverbrennt/chat-backend#readme",
+  "devDependencies": {
+    "@koa/cors": "^4.0.0",
+    "forever": "^4.0.3",
+    "http": "^0.0.1-security",
+    "koa": "^2.14.2",
+    "koa-body": "^6.0.1",
+    "koa-router": "^12.0.0",
+    "koa-static": "^5.0.0",
+    "ws": "^8.13.0"
+  }
+}
