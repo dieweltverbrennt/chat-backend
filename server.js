@@ -1,17 +1,13 @@
 const http = require('http');
 const Koa = require('koa');
 const koaBody = require('koa-body').default;
-const Router = require('koa-router');
+const router = require('./routes/routes');
 const cors = require('@koa/cors');
 const WS = require('ws');
 const Chat = require('./api/Chat')
 
-const chat = new Chat();
-
 const app = new Koa();
-const router = new Router();
-
-app.use(cors());
+const chat = new Chat();
 
 app.use(koaBody({
     urlencoded: true,
@@ -19,39 +15,51 @@ app.use(koaBody({
     json: true,
 }));
 
-router.get('/index', async (ctx) => {
-    ctx.response.body = 'working';
-});
+app.use(cors());
+
+app.use(router());
 
 const port = process.env.PORT || 7070;
 const server = http.createServer(app.callback());
 const wsServer = new WS.Server({ server });
 
-wsServer.on('connection', (ws, req) => {
-    console.log('connected');
+wsServer.on('connection', (ws) => {
+    console.log(ws);
+    const errCallback = (err) => {
+      if (err) {
+        console.log(err);
+      }
+    }
 
-    ws.send(JSON.stringify({ type: 'message', data: 'message.data', user: 'message.user', time: 'time'}));
+    const sending = (data) => {
+        [...wsServer.clients]
+          .filter((client) => client.readyState === WS.OPEN)
+          .forEach((client) => client.send(data, errCallback));
+      }
+
 
     ws.on('message', async (msg) => {
         const message = JSON.parse(msg);
 
         if (message.type === 'addUser') {
             if (chat.checkUser(message.data)) {
-                chat.addUser(message.data);
-                ws.send(JSON.stringify({ type: 'addUser', data: message.data}));
-                //
-                // ws.send(JSON.stringify({ type: 'addUser', data: 'user'}))
+                chat.addUser(ws, message.data);
+                sending(JSON.stringify({ type: 'addUser', data: message.data}))
             } else {
-                ws.send(JSON.stringify({ type: 'addUser', data: 'error'}));
+                sending(JSON.stringify({ type: 'addUser', data: 'error'}));
             }
-        } else if (message.type === 'message') {
-            const time = chat.getCurrentDate();
-            ws.send(JSON.stringify({ type: 'message', data: message.data, user: message.user, time: time}));
-            //
-            // ws.send(JSON.stringify({ type: 'deleteUser', data: 'user'}))
-        } else if (message.type === 'deleteUser') {
-            ws.send(JSON.stringify({ type: 'deleteUser', data: message.data}));
         }
-    })
+        else if (message.type === 'message') {
+            const time = chat.getCurrentDate();
+            sending(JSON.stringify({ type: 'message', data: message.data, user: message.user, time: time}));
+        } else if (message.type === 'activeUsers') {
+            sending(JSON.stringify({ type: 'activeUsers', data: chat.getActiveClients()}));
+        }
+    });
+
+    ws.on('close', () => {
+        chat.deleteUser(ws);
+        sending(JSON.stringify({ type: 'activeUsers', data: chat.getActiveClients()}));
+    });
 })
 server.listen(port, () => console.log('working ' + port));

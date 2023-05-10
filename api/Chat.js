@@ -1,23 +1,33 @@
 class Chat {
     constructor() {
-        this.users = [];
+        this.users = new Map();
     }
 
-    addUser(user) {
-        this.users.push(user);
+    addUser(ws, user) {
+        this.users.set(ws, user);
     }
 
     checkUser(user) {
-        if (this.users.includes(user)) {
-            return false;
+        const arr = [...this.users.values()];
+        if (arr.includes(user)) {
+            return false
         } else {
-            return true;
+            return true
         }
     }
 
-    deleteUser(user) {
-        const toDelete = this.users.findIndex(user);
-        this.users.splice(toDelete, 1);
+    deleteUser(ws) {
+        this.clients.delete(ws);
+    }
+
+    getActiveClients() {
+        const result = [];
+        this.users.forEach((value, key) => {
+            if (key.readyState === 1) {
+                result.push(value);
+            }
+        });
+        return result;
     }
 
     getCurrentDate() {
